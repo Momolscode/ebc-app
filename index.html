@@ -18,10 +18,11 @@ button{font-size:18px;padding:12px 28px;border-radius:99px;border:0;background:l
 </style></head><body><main>
 <img src="icone-512.png" alt="">
 <h1>Céleste</h1>
-<p>Application privée de L’Étoile du Berger Céleste. Entrez la clé de la cabine pour l’ouvrir sur cet appareil.</p>
-<form id="f"><input id="cle" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="clé de la cabine" required></form>
+<p>Application privée de L’Étoile du Berger Céleste. Tapez votre clé personnelle (4 mots) pour l’ouvrir sur cet appareil.</p>
+<form id="f"><input id="cle" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="votre clé (4 mots)" required></form>
 <button form="f" type="submit">Ouvrir</button>
 <p id="etat"></p>
+<p style="font-size:13px;opacity:.6">version <span id="version"></span> · <a href="#" id="recommencer" style="color:#f6d78f">recommencer</a></p>
 </main>
 <script>
 'use strict';
@@ -36,13 +37,17 @@ async function demarrer() {
   if (locale && (!distante || locale.trim() === distante)) { location.replace('app/index.html'); return; }
   if (locale) etat.textContent = 'Une nouvelle version est prête : entrez la clé pour la mettre à jour.';
 }
+const normaliser = p => p.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-+|-+$/g, '');
 async function ouvrir(phrase) {
+  if (/^[0-9a-z]{4}-?[0-9a-z]{4}-?[0-9a-z]{4}$/i.test(phrase.trim()) && /[0-9]/.test(phrase)) {
+    throw new Error('Ceci est une clé de paiement : elle se tape plus tard, dans « J’ai une clé », sur l’écran de Céleste. Ici, tapez votre clé de 4 mots.');
+  }
   etat.textContent = 'Ouverture…';
   const [serr, brut] = await Promise.all([fetch('serrures.json', { cache: 'no-store' }).then(r => r.json()),
     fetch('paquet.bin', { cache: 'no-store' }).then(r => r.arrayBuffer()).then(b => new Uint8Array(b))]);
   if (String.fromCharCode(...brut.slice(0, 4)) !== 'EBC2') throw new Error('paquet inconnu');
   const sel = Uint8Array.from(atob(serr.sel), c => c.charCodeAt(0));
-  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(phrase.trim().toLowerCase().replace(/\s+/g, '-')), 'PBKDF2', false, ['deriveBits']);
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(normaliser(phrase)), 'PBKDF2', false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: sel, iterations: serr.tours }, base, 256);
   const kHmac = await crypto.subtle.importKey('raw', bits, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const rep = Array.from(new Uint8Array(await crypto.subtle.sign('HMAC', kHmac, new TextEncoder().encode('repere'))).slice(0, 8), x => x.toString(16).padStart(2, '0')).join('');
@@ -65,7 +70,14 @@ async function ouvrir(phrase) {
 }
 document.getElementById('f').addEventListener('submit', ev => {
   ev.preventDefault();
-  ouvrir(document.getElementById('cle').value).catch(e => { etat.textContent = e.message === 'clé incorrecte' ? 'Clé incorrecte.' : 'Ouverture impossible : ' + e.message; });
+  ouvrir(document.getElementById('cle').value).catch(e => { etat.textContent = e.message === 'clé incorrecte'
+    ? 'Clé incorrecte : vérifiez les 4 mots (les accents et les majuscules ne comptent pas).' : (e.message.startsWith('Ceci') ? e.message : 'Ouverture impossible : ' + e.message); });
 });
+document.getElementById('recommencer').addEventListener('click', async ev => {
+  ev.preventDefault();
+  try { for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister(); for (const k of await caches.keys()) await caches.delete(k); } catch (e) {}
+  location.replace(location.pathname + '?r=' + Date.now());
+});
+versionDistante().then(v => { document.getElementById('version').textContent = v || 'hors ligne'; });
 demarrer();
 </script></body></html>
