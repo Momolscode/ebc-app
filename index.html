@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Céleste"><meta name="theme-color" content="#120a26">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icone-180.png">
+<title>Céleste</title>
+<style>
+html,body{margin:0;height:100%;background:radial-gradient(circle at 50% 30%,#2b1856,#0c0618 60%,#05030b);color:#f2eaff;font-family:Georgia,serif}
+main{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;box-sizing:border-box;text-align:center}
+img{width:132px;height:132px;border-radius:50%;box-shadow:0 0 40px rgba(160,107,255,.6),0 0 0 2px rgba(242,207,126,.7)}
+h1{margin:0;font-weight:400;color:#f2cf7e;font-size:28px;letter-spacing:.04em}
+p{margin:0;max-width:340px;line-height:1.4;color:#e3d2ff}
+input{width:100%;max-width:320px;box-sizing:border-box;font-size:18px;padding:12px 14px;border-radius:12px;border:1.5px solid rgba(222,180,100,.6);background:rgba(15,6,32,.8);color:#fff;text-align:center}
+button{font-size:18px;padding:12px 28px;border-radius:99px;border:0;background:linear-gradient(180deg,#fbe3a5,#e2b25a);color:#1b0d33;font-weight:700}
+#etat{min-height:1.4em;color:#f6d78f}
+</style></head><body><main>
+<img src="icone-512.png" alt="">
+<h1>Céleste</h1>
+<p>Application privée de L’Étoile du Berger Céleste. Entrez la clé de la cabine pour l’ouvrir sur cet appareil.</p>
+<form id="f"><input id="cle" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="clé de la cabine" required></form>
+<button form="f" type="submit">Ouvrir</button>
+<p id="etat"></p>
+</main>
+<script>
+'use strict';
+const etat = document.getElementById('etat');
+const CACHE = 'celeste-app';
+const versionLocale = () => caches.open(CACHE).then(c => c.match(new URL('app/version.txt', location.href).href)).then(r => r ? r.text() : '');
+async function versionDistante() { try { const r = await fetch('version.txt', { cache: 'no-store' }); return r.ok ? (await r.text()).trim() : ''; } catch (e) { return ''; } }
+async function demarrer() {
+  if (!('serviceWorker' in navigator) || !window.caches || !crypto.subtle) { etat.textContent = 'Cet appareil ne permet pas d’ouvrir l’application.'; return; }
+  await navigator.serviceWorker.register('sw.js');
+  const [locale, distante] = await Promise.all([versionLocale(), versionDistante()]);
+  if (locale && (!distante || locale.trim() === distante)) { location.replace('app/index.html'); return; }
+  if (locale) etat.textContent = 'Une nouvelle version est prête : entrez la clé pour la mettre à jour.';
+}
+async function ouvrir(phrase) {
+  etat.textContent = 'Ouverture…';
+  const brut = new Uint8Array(await (await fetch('paquet.bin', { cache: 'no-store' })).arrayBuffer());
+  if (String.fromCharCode(...brut.slice(0, 4)) !== 'EBC1') throw new Error('paquet inconnu');
+  const sel = brut.slice(4, 20), iv = brut.slice(20, 32), chiffre = brut.slice(32);
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(phrase.trim().toLowerCase()), 'PBKDF2', false, ['deriveKey']);
+  const cle = await crypto.subtle.deriveKey({ name: 'PBKDF2', hash: 'SHA-256', salt: sel, iterations: 310000 }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  let clair;
+  try { clair = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, cle, chiffre)); }
+  catch (e) { throw new Error('clé incorrecte'); }
+  const n = new DataView(clair.buffer).getUint32(0), index = JSON.parse(new TextDecoder().decode(clair.slice(4, 4 + n))), corps = 4 + n;
+  const c = await caches.open(CACHE);
+  for (const f of index) {
+    const r = new Response(clair.slice(corps + f.o, corps + f.o + f.n), { headers: { 'Content-Type': f.t } });
+    await c.put(new URL('app/' + f.p, location.href).href, r);
+  }
+  await navigator.serviceWorker.ready;
+  etat.textContent = 'C’est prêt.';
+  location.replace('app/index.html');
+}
+document.getElementById('f').addEventListener('submit', ev => {
+  ev.preventDefault();
+  ouvrir(document.getElementById('cle').value).catch(e => { etat.textContent = e.message === 'clé incorrecte' ? 'Clé incorrecte.' : 'Ouverture impossible : ' + e.message; });
+});
+demarrer();
+</script></body></html>
