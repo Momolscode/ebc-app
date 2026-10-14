@@ -36,12 +36,37 @@ async function demarrer() {
   await navigator.serviceWorker.register('sw.js');
   const [locale, distante] = await Promise.all([versionLocale(), versionDistante()]);
   if (locale && (!distante || locale.trim() === distante)) { location.replace('app/index.html'); return; }
-  if (await ouvrirSeule()) return;
-  if (locale) etat.textContent = 'Une nouvelle version est prête : entrez la clé pour la mettre à jour.';
+  if (await ouvrirSeule(locale)) return;
+  if (locale && !/retapez/.test(etat.textContent)) etat.textContent = 'Une nouvelle version est prête : entrez la clé pour la mettre à jour.';
 }
 /* 14/10 (Michael : « retenir la clé ») : l'appareil garde une clé dérivée des 4 mots (PBKDF2, sel fixe), jamais les mots eux-mêmes.
    Une clé retirée par Michael (cles.py retirer) ne marche plus : on redemande alors les 4 mots. */
 const RETENUE = 'celeste-cle-retenue';
+/* 14/10 au soir (Michael : « si l'appareil a mis les quatre mots, on n'a plus besoin de les demander… que ce soit bien effectif ») :
+   la clé retenue est gardée à deux endroits (localStorage et IndexedDB), l'appareil demande un stockage durable, et une coupure
+   de réseau pendant une mise à jour ne fait plus oublier la clé : seule une clé retirée (cles.py retirer) l'efface. */
+function baseCles() { return new Promise((ok, ko) => { const r = indexedDB.open('celeste', 1); r.onupgradeneeded = () => r.result.createObjectStore('cles'); r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error); }); }
+async function idb(op, valeur) {
+  try {
+    const db = await baseCles();
+    return await new Promise((ok, ko) => {
+      const st = db.transaction('cles', op === 'lire' ? 'readonly' : 'readwrite').objectStore('cles');
+      const r = op === 'lire' ? st.get(RETENUE) : op === 'ecrire' ? st.put(valeur, RETENUE) : st.delete(RETENUE);
+      r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error);
+    });
+  } catch (e) { return null; }
+}
+async function lireRetenue() {
+  let t = null; try { t = localStorage.getItem(RETENUE); } catch (e) { /* stockage indisponible */ }
+  if (!t) { t = await idb('lire'); if (t) try { localStorage.setItem(RETENUE, t); } catch (e) { /* rien */ } }
+  return t || null;
+}
+async function garderRetenue(t) {
+  try { localStorage.setItem(RETENUE, t); } catch (e) { /* rien */ }
+  await idb('ecrire', t);
+  try { if (navigator.storage && navigator.storage.persist) await navigator.storage.persist(); } catch (e) { /* rien */ }
+}
+async function oublierRetenue() { try { localStorage.removeItem(RETENUE); } catch (e) { /* rien */ } await idb('effacer'); }
 const b64 = t => Uint8Array.from(atob(t), c => c.charCodeAt(0));
 const enB64 = a => btoa(String.fromCharCode(...new Uint8Array(a)));
 async function lireServeur() {
@@ -50,19 +75,21 @@ async function lireServeur() {
   if (String.fromCharCode(...brut.slice(0, 4)) !== 'EBC2') throw new Error('paquet inconnu');
   return [serr, brut];
 }
-async function ouvrirSeule() {
-  let t = null; try { t = localStorage.getItem(RETENUE); } catch (e) { /* stockage indisponible */ }
+async function ouvrirSeule(locale) {
+  const t = await lireRetenue();
   if (!t) return false;
-  try {
-    etat.textContent = 'Mise à jour…';
-    const [serr, brut] = await lireServeur();
-    await installer(b64(t), serr, brut);
-    location.replace('app/index.html');
-    return true;
-  } catch (e) {
-    try { localStorage.removeItem(RETENUE); } catch (x) { /* rien */ }
-    etat.textContent = 'La clé retenue ne marche plus : retapez les 4 mots.';
-    return false;
+  etat.textContent = 'Mise à jour…';
+  let serr, brut;
+  try { [serr, brut] = await lireServeur(); }
+  catch (e) {   /* pas de réseau : la clé reste gardée ; la version déjà installée s'ouvre */
+    if (locale) { location.replace('app/index.html'); return true; }
+    etat.textContent = 'Connexion impossible pour l’instant : réessayez dans un moment (la clé reste gardée).'; return true;
+  }
+  try { await installer(b64(t), serr, brut); location.replace('app/index.html'); return true; }
+  catch (e) {
+    if (e.message === 'clé incorrecte') { await oublierRetenue(); etat.textContent = 'La clé retenue ne marche plus : retapez les 4 mots.'; return false; }
+    if (locale) { location.replace('app/index.html'); return true; }
+    etat.textContent = 'Mise à jour impossible pour l’instant : réessayez dans un moment (la clé reste gardée).'; return true;
   }
 }
 const normaliser = p => p.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-+|-+$/g, '');
@@ -76,7 +103,7 @@ async function ouvrir(phrase) {
   const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(normaliser(phrase)), 'PBKDF2', false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: sel, iterations: serr.tours }, base, 256);
   await installer(bits, serr, brut);
-  try { if (document.getElementById('retenir').checked) localStorage.setItem(RETENUE, enB64(bits)); else localStorage.removeItem(RETENUE); } catch (e) { /* rien */ }
+  if (document.getElementById('retenir').checked) await garderRetenue(enB64(bits)); else await oublierRetenue();
   etat.textContent = 'C’est prêt.';
   location.replace('app/index.html');
 }
@@ -104,9 +131,9 @@ document.getElementById('f').addEventListener('submit', ev => {
 });
 document.getElementById('recommencer').addEventListener('click', async ev => {
   ev.preventDefault();
-  try { localStorage.removeItem(RETENUE); for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister(); for (const k of await caches.keys()) await caches.delete(k); } catch (e) {}
+  try { await oublierRetenue(); for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister(); for (const k of await caches.keys()) await caches.delete(k); } catch (e) {}
   location.replace(location.pathname + '?r=' + Date.now());
 });
 versionDistante().then(v => { document.getElementById('version').textContent = v || 'hors ligne'; });
-demarrer();
+demarrer().catch(e => { etat.textContent = 'Ouverture impossible : ' + e.message; });
 </script></body></html>
