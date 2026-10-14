@@ -20,6 +20,7 @@ button{font-size:18px;padding:12px 28px;border-radius:99px;border:0;background:l
 <h1>Céleste</h1>
 <p>Application privée de L’Étoile du Berger Céleste. Tapez votre clé personnelle (4 mots) pour l’ouvrir sur cet appareil.</p>
 <form id="f"><input id="cle" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="votre clé (4 mots)" required></form>
+<label style="display:flex;gap:10px;align-items:center;max-width:320px;text-align:left;font-size:15px;color:#e3d2ff"><input id="retenir" type="checkbox" checked style="width:22px;height:22px;flex:none;accent-color:#e2b25a"> Retenir la clé sur cet appareil : les mises à jour s’ouvriront toutes seules.</label>
 <button form="f" type="submit">Ouvrir</button>
 <p id="etat"></p>
 <p style="font-size:13px;opacity:.6">version <span id="version"></span> · <a href="#" id="recommencer" style="color:#f6d78f">recommencer</a></p>
@@ -35,7 +36,34 @@ async function demarrer() {
   await navigator.serviceWorker.register('sw.js');
   const [locale, distante] = await Promise.all([versionLocale(), versionDistante()]);
   if (locale && (!distante || locale.trim() === distante)) { location.replace('app/index.html'); return; }
+  if (await ouvrirSeule()) return;
   if (locale) etat.textContent = 'Une nouvelle version est prête : entrez la clé pour la mettre à jour.';
+}
+/* 14/10 (Michael : « retenir la clé ») : l'appareil garde une clé dérivée des 4 mots (PBKDF2, sel fixe), jamais les mots eux-mêmes.
+   Une clé retirée par Michael (cles.py retirer) ne marche plus : on redemande alors les 4 mots. */
+const RETENUE = 'celeste-cle-retenue';
+const b64 = t => Uint8Array.from(atob(t), c => c.charCodeAt(0));
+const enB64 = a => btoa(String.fromCharCode(...new Uint8Array(a)));
+async function lireServeur() {
+  const [serr, brut] = await Promise.all([fetch('serrures.json', { cache: 'no-store' }).then(r => r.json()),
+    fetch('paquet.bin', { cache: 'no-store' }).then(r => r.arrayBuffer()).then(b => new Uint8Array(b))]);
+  if (String.fromCharCode(...brut.slice(0, 4)) !== 'EBC2') throw new Error('paquet inconnu');
+  return [serr, brut];
+}
+async function ouvrirSeule() {
+  let t = null; try { t = localStorage.getItem(RETENUE); } catch (e) { /* stockage indisponible */ }
+  if (!t) return false;
+  try {
+    etat.textContent = 'Mise à jour…';
+    const [serr, brut] = await lireServeur();
+    await installer(b64(t), serr, brut);
+    location.replace('app/index.html');
+    return true;
+  } catch (e) {
+    try { localStorage.removeItem(RETENUE); } catch (x) { /* rien */ }
+    etat.textContent = 'La clé retenue ne marche plus : retapez les 4 mots.';
+    return false;
+  }
 }
 const normaliser = p => p.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-+|-+$/g, '');
 async function ouvrir(phrase) {
@@ -43,17 +71,20 @@ async function ouvrir(phrase) {
     throw new Error('Ceci est une clé de paiement : elle se tape plus tard, dans « J’ai une clé », sur l’écran de Céleste. Ici, tapez votre clé de 4 mots.');
   }
   etat.textContent = 'Ouverture…';
-  const [serr, brut] = await Promise.all([fetch('serrures.json', { cache: 'no-store' }).then(r => r.json()),
-    fetch('paquet.bin', { cache: 'no-store' }).then(r => r.arrayBuffer()).then(b => new Uint8Array(b))]);
-  if (String.fromCharCode(...brut.slice(0, 4)) !== 'EBC2') throw new Error('paquet inconnu');
+  const [serr, brut] = await lireServeur();
   const sel = Uint8Array.from(atob(serr.sel), c => c.charCodeAt(0));
   const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(normaliser(phrase)), 'PBKDF2', false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: sel, iterations: serr.tours }, base, 256);
+  await installer(bits, serr, brut);
+  try { if (document.getElementById('retenir').checked) localStorage.setItem(RETENUE, enB64(bits)); else localStorage.removeItem(RETENUE); } catch (e) { /* rien */ }
+  etat.textContent = 'C’est prêt.';
+  location.replace('app/index.html');
+}
+async function installer(bits, serr, brut) {
   const kHmac = await crypto.subtle.importKey('raw', bits, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const rep = Array.from(new Uint8Array(await crypto.subtle.sign('HMAC', kHmac, new TextEncoder().encode('repere'))).slice(0, 8), x => x.toString(16).padStart(2, '0')).join('');
   const serrure = serr.serrures.find(x => x.id === rep);
   if (!serrure) throw new Error('clé incorrecte');
-  const b64 = t => Uint8Array.from(atob(t), c => c.charCodeAt(0));
   const kek = await crypto.subtle.importKey('raw', bits, 'AES-GCM', false, ['decrypt']);
   const brutDonnees = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(serrure.iv), additionalData: new TextEncoder().encode('serrure') }, kek, b64(serrure.env));
   const cle = await crypto.subtle.importKey('raw', brutDonnees, 'AES-GCM', false, ['decrypt']);
@@ -65,8 +96,6 @@ async function ouvrir(phrase) {
     await c.put(new URL('app/' + f.p, location.href).href, r);
   }
   await navigator.serviceWorker.ready;
-  etat.textContent = 'C’est prêt.';
-  location.replace('app/index.html');
 }
 document.getElementById('f').addEventListener('submit', ev => {
   ev.preventDefault();
@@ -75,7 +104,7 @@ document.getElementById('f').addEventListener('submit', ev => {
 });
 document.getElementById('recommencer').addEventListener('click', async ev => {
   ev.preventDefault();
-  try { for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister(); for (const k of await caches.keys()) await caches.delete(k); } catch (e) {}
+  try { localStorage.removeItem(RETENUE); for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister(); for (const k of await caches.keys()) await caches.delete(k); } catch (e) {}
   location.replace(location.pathname + '?r=' + Date.now());
 });
 versionDistante().then(v => { document.getElementById('version').textContent = v || 'hors ligne'; });
