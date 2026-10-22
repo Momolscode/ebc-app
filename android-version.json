@@ -1,9 +1,9 @@
 {
   "schema": "celeste-android-update/1",
   "package": "fr.etoileduberger.celeste",
-  "versionCode": 11,
-  "versionName": "0.11",
-  "apkUrl": "https://github.com/Momolscode/ebc-app/releases/download/celeste-0.11-code11/Celeste-Android-0.11.apk",
-  "apkSha256": "661d978b41ae720705bd31fbfceaf2329babbcebb48729bf2f091cae0d267839",
+  "versionCode": 12,
+  "versionName": "0.12",
+  "apkUrl": "https://github.com/Momolscode/ebc-app/releases/download/celeste-0.12-code12/Celeste-Android-0.12.apk",
+  "apkSha256": "bcdb06845e8e020b8498a8f57fbf09469757a131628c461bf64d470779e1a7fa",
   "certificatSHA256": "829f8625b1dd17c852e2cbc99f0886b3bed5e504f9499b589f3445f00b0ac122"
 }
