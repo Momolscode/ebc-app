@@ -67,6 +67,7 @@ self.addEventListener('fetch', e => {
   }
   /* 14/10 au soir : les bibliothèques libres (app/vendor : MediaPipe pour la chiromancie) ne sont pas dans le paquet chiffré ;
      elles viennent du site au premier usage, puis restent dans l'appareil */
+  if (u.pathname.startsWith(dossier.pathname + 'vendor/piper/')) return;
   if (u.pathname.startsWith(dossier.pathname + 'vendor/')) {
     e.respondWith(caches.open('celeste-vendor').then(c => c.match(u.origin + u.pathname).then(r => r || fetch(e.request).then(rep => {
       if (rep.ok) c.put(u.origin + u.pathname, rep.clone()); return rep; }))));
