@@ -7,133 +7,131 @@
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icone-180.png">
 <title>Céleste</title>
 <style>
-html,body{margin:0;height:100%;background:radial-gradient(circle at 50% 30%,#2b1856,#0c0618 60%,#05030b);color:#f2eaff;font-family:Georgia,serif}
-main{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;box-sizing:border-box;text-align:center}
-img{width:132px;height:132px;border-radius:50%;box-shadow:0 0 40px rgba(160,107,255,.6),0 0 0 2px rgba(242,207,126,.7)}
-h1{margin:0;font-weight:400;color:#f2cf7e;font-size:28px;letter-spacing:.04em}
-p{margin:0;max-width:340px;line-height:1.4;color:#e3d2ff}
-input{width:100%;max-width:320px;box-sizing:border-box;font-size:18px;padding:12px 14px;border-radius:12px;border:1.5px solid rgba(222,180,100,.6);background:rgba(15,6,32,.8);color:#fff;text-align:center}
-button{font-size:18px;padding:12px 28px;border-radius:99px;border:0;background:linear-gradient(180deg,#fbe3a5,#e2b25a);color:#1b0d33;font-weight:700}
-#etat{min-height:1.4em;color:#f6d78f}
+html,body{margin:0;min-height:100%;background:radial-gradient(circle at 50% 30%,#2b1856,#0c0618 60%,#05030b);color:#f2eaff;font-family:Georgia,serif}
+main{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;box-sizing:border-box;text-align:center}
+img{width:132px;height:132px;border-radius:50%;box-shadow:0 0 40px #a06bff66,0 0 0 2px #f2cf7eaa}
+h1{margin:0;font-weight:400;color:#f2cf7e;font-size:28px}p{margin:0;max-width:360px;line-height:1.5}
+button{font-size:18px;padding:12px 25px;border-radius:99px;border:0;background:#f2cf7e;color:#1b0d33;cursor:pointer}
+[hidden]{display:none!important}small{opacity:.65}
 </style></head><body><main>
-<img src="icone-512.png" alt="">
-<h1>Céleste</h1>
-<p>Application privée de L’Étoile du Berger Céleste. Tapez votre clé personnelle (4 mots) pour l’ouvrir sur cet appareil.</p>
-<form id="f"><input id="cle" type="text" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="votre clé (4 mots)" required></form>
-<label style="display:flex;gap:10px;align-items:center;max-width:320px;text-align:left;font-size:15px;color:#e3d2ff"><input id="retenir" type="checkbox" checked style="width:22px;height:22px;flex:none;accent-color:#e2b25a"> Retenir la clé sur cet appareil : les mises à jour s’ouvriront toutes seules.</label>
-<button form="f" type="submit">Ouvrir</button>
-<p id="etat"></p>
-<p style="font-size:13px;opacity:.6">version <span id="version"></span> · <a href="#" id="recommencer" style="color:#f6d78f">recommencer</a></p>
-</main>
-<script>
+<img src="icone-512.png" alt=""><h1>Céleste</h1>
+<p id="etat" role="status" aria-live="polite">Ouverture de Céleste…</p>
+<button id="reessayer" hidden>Réessayer</button>
+<button id="continuer" hidden>Ouvrir la version disponible</button>
+<small id="version"></small>
+</main><script>
 'use strict';
 const etat = document.getElementById('etat');
-const CACHE = 'celeste-app';
-const versionLocale = () => caches.open(CACHE).then(c => c.match(new URL('app/version.txt', location.href).href)).then(r => r ? r.text() : '');
-async function versionDistante() { try { const r = await fetch('version.txt', { cache: 'no-store' }); return r.ok ? (await r.text()).trim() : ''; } catch (e) { return ''; } }
-async function demarrer() {
-  if (!('serviceWorker' in navigator) || !window.caches || !crypto.subtle) { etat.textContent = 'Cet appareil ne permet pas d’ouvrir l’application.'; return; }
-  await navigator.serviceWorker.register('sw.js');
-  const [locale, distante] = await Promise.all([versionLocale(), versionDistante()]);
-  if (locale && (!distante || locale.trim() === distante)) { location.replace('app/index.html'); return; }
-  if (await ouvrirSeule(locale)) return;
-  if (locale && !/retapez/.test(etat.textContent)) etat.textContent = 'Une nouvelle version est prête : entrez la clé pour la mettre à jour.';
-}
-/* 14/10 (Michael : « retenir la clé ») : l'appareil garde une clé dérivée des 4 mots (PBKDF2, sel fixe), jamais les mots eux-mêmes.
-   Une clé retirée par Michael (cles.py retirer) ne marche plus : on redemande alors les 4 mots. */
-const RETENUE = 'celeste-cle-retenue';
-/* 14/10 au soir (Michael : « si l'appareil a mis les quatre mots, on n'a plus besoin de les demander… que ce soit bien effectif ») :
-   la clé retenue est gardée à deux endroits (localStorage et IndexedDB), l'appareil demande un stockage durable, et une coupure
-   de réseau pendant une mise à jour ne fait plus oublier la clé : seule une clé retirée (cles.py retirer) l'efface. */
-function baseCles() { return new Promise((ok, ko) => { const r = indexedDB.open('celeste', 1); r.onupgradeneeded = () => r.result.createObjectStore('cles'); r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error); }); }
-async function idb(op, valeur) {
-  try {
-    const db = await baseCles();
-    return await new Promise((ok, ko) => {
-      const st = db.transaction('cles', op === 'lire' ? 'readonly' : 'readwrite').objectStore('cles');
-      const r = op === 'lire' ? st.get(RETENUE) : op === 'ecrire' ? st.put(valeur, RETENUE) : st.delete(RETENUE);
-      r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error);
-    });
-  } catch (e) { return null; }
-}
-async function lireRetenue() {
-  let t = null; try { t = localStorage.getItem(RETENUE); } catch (e) { /* stockage indisponible */ }
-  if (!t) { t = await idb('lire'); if (t) try { localStorage.setItem(RETENUE, t); } catch (e) { /* rien */ } }
-  return t || null;
-}
-async function garderRetenue(t) {
-  try { localStorage.setItem(RETENUE, t); } catch (e) { /* rien */ }
-  await idb('ecrire', t);
-  try { if (navigator.storage && navigator.storage.persist) await navigator.storage.persist(); } catch (e) { /* rien */ }
-}
-async function oublierRetenue() { try { localStorage.removeItem(RETENUE); } catch (e) { /* rien */ } await idb('effacer'); }
+const META = 'celeste-runtime', LEGACY = 'celeste-app', PREFIX = 'celeste-app-';
+const POINTER = new URL('.celeste-version', location.href).href;
+const versionValide = v => /^\d{8}-\d{6}$/.test(v);
 const b64 = t => Uint8Array.from(atob(t), c => c.charCodeAt(0));
-const enB64 = a => btoa(String.fromCharCode(...new Uint8Array(a)));
-async function lireServeur() {
-  const [serr, brut] = await Promise.all([fetch('serrures.json', { cache: 'no-store' }).then(r => r.json()),
-    fetch('paquet.bin', { cache: 'no-store' }).then(r => r.arrayBuffer()).then(b => new Uint8Array(b))]);
-  if (String.fromCharCode(...brut.slice(0, 4)) !== 'EBC2') throw new Error('paquet inconnu');
-  return [serr, brut];
+let enCours = false;
+async function borner(p, ms) {
+  let timer;
+  try { return await Promise.race([p, new Promise((_,ko) => { timer = setTimeout(() => ko(new Error('delai')), ms); })]); }
+  finally { clearTimeout(timer); }
 }
-async function ouvrirSeule(locale) {
-  const t = await lireRetenue();
-  if (!t) return false;
-  etat.textContent = 'Mise à jour…';
-  let serr, brut;
-  try { [serr, brut] = await lireServeur(); }
-  catch (e) {   /* pas de réseau : la clé reste gardée ; la version déjà installée s'ouvre */
-    if (locale) { location.replace('app/index.html'); return true; }
-    etat.textContent = 'Connexion impossible pour l’instant : réessayez dans un moment (la clé reste gardée).'; return true;
-  }
-  try { await installer(b64(t), serr, brut); location.replace('app/index.html'); return true; }
-  catch (e) {
-    if (e.message === 'clé incorrecte') { await oublierRetenue(); etat.textContent = 'La clé retenue ne marche plus : retapez les 4 mots.'; return false; }
-    if (locale) { location.replace('app/index.html'); return true; }
-    etat.textContent = 'Mise à jour impossible pour l’instant : réessayez dans un moment (la clé reste gardée).'; return true;
-  }
+async function lire(url, type, ms = 12000) {
+  const c = new AbortController(), timer = setTimeout(() => c.abort(), ms);
+  try {
+    const r = await fetch(url, {cache:'no-store', signal:c.signal});
+    if (!r.ok) throw new Error('telechargement');
+    return await r[type]();
+  } finally { clearTimeout(timer); }
 }
-const normaliser = p => p.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-+|-+$/g, '');
-async function ouvrir(phrase) {
-  if (/^[0-9a-z]{4}-?[0-9a-z]{4}-?[0-9a-z]{4}$/i.test(phrase.trim()) && /[0-9]/.test(phrase)) {
-    throw new Error('Ceci est une clé de paiement : elle se tape plus tard, dans « J’ai une clé », sur l’écran de Céleste. Ici, tapez votre clé de 4 mots.');
-  }
-  etat.textContent = 'Ouverture…';
-  const [serr, brut] = await lireServeur();
-  const sel = Uint8Array.from(atob(serr.sel), c => c.charCodeAt(0));
-  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(normaliser(phrase)), 'PBKDF2', false, ['deriveBits']);
-  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: sel, iterations: serr.tours }, base, 256);
-  await installer(bits, serr, brut);
-  if (document.getElementById('retenir').checked) await garderRetenue(enB64(bits)); else await oublierRetenue();
-  etat.textContent = 'C’est prêt.';
-  location.replace('app/index.html');
+async function versionLocale() {
+  const meta = await caches.open(META), p = await meta.match(POINTER);
+  const v = p && (await p.text()).trim();
+  const cache = await caches.open(versionValide(v) ? PREFIX + v : LEGACY);
+  const r = await cache.match(new URL('app/version.txt', location.href).href);
+  const locale = r && (await r.text()).trim();
+  return versionValide(locale) && await cache.match(new URL('app/index.html',location.href).href) ? locale : '';
 }
-async function installer(bits, serr, brut) {
-  const kHmac = await crypto.subtle.importKey('raw', bits, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const rep = Array.from(new Uint8Array(await crypto.subtle.sign('HMAC', kHmac, new TextEncoder().encode('repere'))).slice(0, 8), x => x.toString(16).padStart(2, '0')).join('');
-  const serrure = serr.serrures.find(x => x.id === rep);
-  if (!serrure) throw new Error('clé incorrecte');
+async function installer(serr, brut, version) {
+  if (serr.v !== 2 || serr.accesDirect?.mode !== 'public' ||
+      serr.accesDirect.version !== version || String.fromCharCode(...brut.slice(0,4)) !== 'EBC2') throw new Error('paquet');
+  const bits = b64(serr.accesDirect.base64);
+  if (bits.length !== 32) throw new Error('paquet');
   const kek = await crypto.subtle.importKey('raw', bits, 'AES-GCM', false, ['decrypt']);
-  const brutDonnees = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(serrure.iv), additionalData: new TextEncoder().encode('serrure') }, kek, b64(serrure.env));
-  const cle = await crypto.subtle.importKey('raw', brutDonnees, 'AES-GCM', false, ['decrypt']);
-  const clair = new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: brut.slice(4, 16) }, cle, brut.slice(16)));
-  const n = new DataView(clair.buffer).getUint32(0), index = JSON.parse(new TextDecoder().decode(clair.slice(4, 4 + n))), corps = 4 + n;
-  const c = await caches.open(CACHE);
+  const envelope = serr.accesDirect;
+  const dataKey = await crypto.subtle.decrypt({name:'AES-GCM', iv:b64(envelope.iv), additionalData:new TextEncoder().encode('acces-public')}, kek, b64(envelope.env));
+  const cle = await crypto.subtle.importKey('raw',dataKey,'AES-GCM',false,['decrypt']);
+  const clair = new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv:brut.slice(4,16)},cle,brut.slice(16)));
+  const n = new DataView(clair.buffer).getUint32(0);
+  if (n < 2 || n > 2000000 || n > clair.length-4) throw new Error('index');
+  const index = JSON.parse(new TextDecoder().decode(clair.slice(4,4+n))), corps=4+n, noms=new Set();
+  if (!Array.isArray(index) || index.length>5000) throw new Error('index');
   for (const f of index) {
-    const r = new Response(clair.slice(corps + f.o, corps + f.o + f.n), { headers: { 'Content-Type': f.t } });
-    await c.put(new URL('app/' + f.p, location.href).href, r);
+    if (typeof f.p!=='string' || !f.p || f.p.startsWith('/') || f.p.includes('\\') || f.p.split('/').some(x=>!x||x==='.'||x==='..') ||
+        noms.has(f.p) || !Number.isSafeInteger(f.o) || !Number.isSafeInteger(f.n) || f.o<0 || f.n<0 || corps+f.o+f.n>clair.length) throw new Error('index');
+    noms.add(f.p);
   }
-  await navigator.serviceWorker.ready;
+  const vf=index.find(f=>f.p==='version.txt');
+  if (!noms.has('index.html') || !vf || new TextDecoder().decode(clair.slice(corps+vf.o,corps+vf.o+vf.n))!==version) throw new Error('version');
+  const nom = PREFIX+version;
+  // Le même identifiant désigne toujours les mêmes octets. Un autre onglet peut
+  // avoir fini d'installer cette version : ne jamais supprimer son cache actif.
+  {
+    const c = await caches.open(nom);
+    for (const f of index) await c.put(new URL('app/'+f.p,location.href).href,
+      new Response(clair.slice(corps+f.o,corps+f.o+f.n),{headers:{'Content-Type':f.t}}));
+    const meta=await caches.open(META);
+    await meta.put(POINTER,new Response(version));
+  }
 }
-document.getElementById('f').addEventListener('submit', ev => {
-  ev.preventDefault();
-  ouvrir(document.getElementById('cle').value).catch(e => { etat.textContent = e.message === 'clé incorrecte'
-    ? 'Clé incorrecte : vérifiez les 4 mots (les accents et les majuscules ne comptent pas).' : (e.message.startsWith('Ceci') ? e.message : 'Ouverture impossible : ' + e.message); });
-});
-document.getElementById('recommencer').addEventListener('click', async ev => {
-  ev.preventDefault();
-  try { await oublierRetenue(); for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister(); for (const k of await caches.keys()) await caches.delete(k); } catch (e) {}
-  location.replace(location.pathname + '?r=' + Date.now());
-});
-versionDistante().then(v => { document.getElementById('version').textContent = v || 'hors ligne'; });
-demarrer().catch(e => { etat.textContent = 'Ouverture impossible : ' + e.message; });
+async function ouvrir() { location.replace('app/index.html?ouverture='+Date.now()); }
+async function attendreControle(registration) {
+  const cible = registration.installing || registration.waiting || registration.active;
+  if (cible && cible.state !== 'activated') await borner(new Promise((ok,ko) => {
+    const verifier = () => {
+      if (cible.state === 'activated' || cible.state === 'redundant') {
+        cible.removeEventListener('statechange',verifier);
+        cible.state === 'activated' ? ok() : ko(new Error('worker'));
+      }
+    };
+    cible.addEventListener('statechange',verifier); verifier();
+  }),15000);
+  if (!navigator.serviceWorker.controller || navigator.serviceWorker.controller !== registration.active)
+    await borner(new Promise(ok => {
+      const verifier = () => {
+        if (navigator.serviceWorker.controller && navigator.serviceWorker.controller === registration.active) {
+          navigator.serviceWorker.removeEventListener('controllerchange',verifier); ok();
+        }
+      };
+      navigator.serviceWorker.addEventListener('controllerchange',verifier); verifier();
+    }),10000);
+}
+async function demarrer() {
+  if (enCours) return; enCours=true;
+  document.getElementById('reessayer').hidden=true;
+  document.getElementById('continuer').hidden=true;
+  let locale='';
+  try {
+    if (!('serviceWorker' in navigator) || !window.caches || !crypto.subtle) throw new Error('appareil');
+    locale=await versionLocale();
+    const registration=await borner(navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}),15000);
+    await borner(navigator.serviceWorker.ready,15000);
+    await attendreControle(registration);
+    let distante='';
+    try { distante=(await lire('version.txt','text')).trim(); } catch(e) { if(locale) return ouvrir(); throw e; }
+    if (!versionValide(distante)) throw new Error('version');
+    document.getElementById('version').textContent='Version '+distante;
+    if (locale===distante) return ouvrir();
+    etat.textContent=locale ? 'Mise à jour de Céleste…' : 'Préparation de Céleste… Le premier téléchargement peut prendre un moment.';
+    if (locale) document.getElementById('continuer').hidden=false;
+    const suffixe='?v='+encodeURIComponent(distante);
+    const [serr,buf]=await Promise.all([lire('serrures.json'+suffixe,'json'),lire('paquet.bin'+suffixe,'arrayBuffer',90000)]);
+    await installer(serr,new Uint8Array(buf),distante);
+    try { if(navigator.storage?.persist) navigator.storage.persist().catch(()=>{}); } catch(e) {}
+    return ouvrir();
+  } catch(e) {
+    if(locale) return ouvrir();
+    etat.textContent=e.message==='appareil' ? 'Ouvre Céleste dans un navigateur récent, avec le stockage autorisé.' : 'Le chargement n’a pas abouti. Vérifie ta connexion et réessaie.';
+    document.getElementById('reessayer').hidden=false;
+  } finally { enCours=false; }
+}
+document.getElementById('reessayer').addEventListener('click',demarrer);
+document.getElementById('continuer').addEventListener('click',ouvrir);
+demarrer();
 </script></body></html>
