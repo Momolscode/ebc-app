@@ -15,10 +15,10 @@ button{font-size:18px;padding:12px 25px;border-radius:99px;border:0;background:#
 [hidden]{display:none!important}small{opacity:.65}
 </style></head><body><main>
 <img src="icone-512.png" alt=""><h1>Céleste</h1>
-<p id="etat" role="status" aria-live="polite">Ouverture de Céleste…</p>
+<p id="etat" role="status" aria-live="polite" hidden>Ouverture de Céleste…</p>
 <button id="reessayer" hidden>Réessayer</button>
 <button id="continuer" hidden>Ouvrir la version disponible</button>
-<small id="version"></small>
+<small id="version" hidden></small>
 </main><script>
 'use strict';
 const etat = document.getElementById('etat');
@@ -104,6 +104,7 @@ async function attendreControle(registration) {
 }
 async function demarrer() {
   if (enCours) return; enCours=true;
+  etat.hidden=true;
   document.getElementById('reessayer').hidden=true;
   document.getElementById('continuer').hidden=true;
   let locale='';
@@ -127,6 +128,7 @@ async function demarrer() {
     return ouvrir();
   } catch(e) {
     if(locale) return ouvrir();
+    etat.hidden=false;
     etat.textContent=e.message==='appareil' ? 'Ouvre Céleste dans un navigateur récent, avec le stockage autorisé.' : 'Le chargement n’a pas abouti. Vérifie ta connexion et réessaie.';
     document.getElementById('reessayer').hidden=false;
   } finally { enCours=false; }
