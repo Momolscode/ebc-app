@@ -120,9 +120,9 @@ async function demarrer() {
     document.getElementById('version').textContent='Version '+distante;
     if (locale===distante) return ouvrir();
     etat.textContent=locale ? 'Mise à jour de Céleste…' : 'Préparation de Céleste… Le premier téléchargement peut prendre un moment.';
-    if (locale) document.getElementById('continuer').hidden=false;
+    /* 05/11/2026 : pendant une mise à jour, plus de bouton vers l'ancienne version : l'appareil passe à la nouvelle dès l'ouverture */
     const suffixe='?v='+encodeURIComponent(distante);
-    const [serr,buf]=await Promise.all([lire('serrures.json'+suffixe,'json'),lire('paquet.bin'+suffixe,'arrayBuffer',90000)]);
+    const [serr,buf]=await Promise.all([lire('serrures.json'+suffixe,'json'),lire('paquet.bin'+suffixe,'arrayBuffer',240000)]);
     await installer(serr,new Uint8Array(buf),distante);
     try { if(navigator.storage?.persist) navigator.storage.persist().catch(()=>{}); } catch(e) {}
     return ouvrir();
