@@ -1,0 +1,36 @@
+[
+  {
+    "name": "onnxruntime-v1.18.0-MIT.txt",
+    "url": "https://raw.githubusercontent.com/microsoft/onnxruntime/v1.18.0/LICENSE",
+    "bytes": 1073,
+    "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c"
+  },
+  {
+    "name": "espeak-ng-GPLv3.txt",
+    "url": "https://raw.githubusercontent.com/rhasspy/espeak-ng/master/COPYING",
+    "bytes": 35147,
+    "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903"
+  },
+  {
+    "name": "piper-phonemize-LICENSE.txt",
+    "url": "https://raw.githubusercontent.com/wide-video/piper-phonemize/master/LICENSE.md",
+    "bytes": 1071,
+    "sha256": "13746d509d74e55ea2265fbef204bb7cdbf84a8315b0207e988326cb54387028"
+  },
+  {
+    "name": "piper-voices-MIT.txt",
+    "url": "https://huggingface.co/rhasspy/piper-voices/raw/main/LICENSE",
+    "error": "HTTP Error 404: Not Found"
+  },
+  {
+    "name": "siwis-MODEL_CARD.txt",
+    "url": "https://huggingface.co/rhasspy/piper-voices/raw/main/fr/fr_FR/siwis/medium/MODEL_CARD",
+    "bytes": 284,
+    "sha256": "bd8b8d079d4d3d2c4cc20345889bbcd586d72f021a132f93357a763eb5232cce"
+  },
+  {
+    "name": "diffusionstudio-LICENSE.txt",
+    "url": "https://raw.githubusercontent.com/diffusion-studio/piper-wasm/main/LICENSE",
+    "error": "HTTP Error 404: Not Found"
+  }
+]

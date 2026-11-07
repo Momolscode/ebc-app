@@ -1,0 +1,20 @@
+[
+  {
+    "nom": "piper-phonemize-cfff8e52.tar.gz",
+    "url": "https://codeload.github.com/wide-video/piper-phonemize/tar.gz/cfff8e52ebaea37c7e953ae2d06b174acb827ac4",
+    "octets": 9787575,
+    "sha256": "7029b52aabc2512d36f4d98c6ede732c48a0e7128d0cd0e62379dfcee770038e"
+  },
+  {
+    "nom": "espeak-ng-0f65aa30.tar.gz",
+    "url": "https://codeload.github.com/rhasspy/espeak-ng/tar.gz/0f65aa301e0d6bae5e172cc74197d32a6182200f",
+    "octets": 16321475,
+    "sha256": "37ebbabb010200be8ec26c61b770e93f964f4503a329d7d74c239a1a40051e43"
+  },
+  {
+    "nom": "espeak-ng-0f65aa30-COPYING.txt",
+    "url": "https://raw.githubusercontent.com/rhasspy/espeak-ng/0f65aa301e0d6bae5e172cc74197d32a6182200f/COPYING",
+    "octets": 35147,
+    "sha256": "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903"
+  }
+]
