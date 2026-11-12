@@ -3,11 +3,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 import {setTimeout as delay} from 'node:timers/promises';
 
 test('sandbox routes require approved offer and webhook configuration', async () => {
   const port=24000 + Math.floor(Math.random()*20000);
-  const proc=spawn(process.execPath,[new URL('./server.mjs',import.meta.url).pathname],{
+  const proc=spawn(process.execPath,[fileURLToPath(new URL('./server.mjs',import.meta.url))],{
     env:{...process.env, PORT:String(port), PAYPAL_CLIENT_ID:'', PAYPAL_CLIENT_SECRET:'',
       CELESTE_TEST_PRICE_EUR:'', PAYPAL_WEBHOOK_ID:''},
     stdio:'ignore'
