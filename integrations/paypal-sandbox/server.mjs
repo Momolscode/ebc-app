@@ -12,7 +12,7 @@ const PRODUCTS = Object.freeze({
   celeste_test: process.env.CELESTE_TEST_PRICE_EUR || '',
 });
 const ORIGIN = process.env.CELESTE_ALLOWED_ORIGIN || 'http://127.0.0.1:8765';
-const VALID_PRICE = /^\\d{1,5}\\.\\d{2}$/;
+const VALID_PRICE = /^\d{1,5}\.\d{2}$/;
 
 function json(res, code, data) {
   res.writeHead(code, {'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store',
