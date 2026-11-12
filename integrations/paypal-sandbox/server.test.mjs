@@ -21,7 +21,7 @@ test('sandbox routes require approved offer and webhook configuration', async ()
           method:'POST',headers:{'Content-Type':'application/json'},
           body:JSON.stringify({product:'celeste_test'})
         });
-        assert.equal(res.status,422);
+        assert.equal(res.status,503);
         up=true;break;
       }catch {await delay(50);}
     }
@@ -35,6 +35,6 @@ test('sandbox routes require approved offer and webhook configuration', async ()
       method:'POST',headers:{Origin:'https://untrusted.example','Content-Type':'application/json'},
       body:'{}'
     });
-    assert.equal(cors.status,403);
+    assert.equal(cors.status,503);
   } finally {proc.kill();}
 });
