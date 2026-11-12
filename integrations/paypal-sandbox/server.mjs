@@ -51,6 +51,32 @@ async function handler(req,res) {
   if(req.headers.origin && req.headers.origin!==ORIGIN)return fail(res,403,'Origin not allowed');
   if(req.method!=='POST')return fail(res,405,'Method not allowed');
   try{
+    if(req.url==='/api/paypal/webhook'){
+      // Verify notification authenticity with PayPal. This sandbox prototype never grants access.
+      const webhookId=process.env.PAYPAL_WEBHOOK_ID;
+      if(!webhookId)return fail(res,503,'Sandbox webhook is not configured');
+      const headers=req.headers;
+      const names={
+        transmission_id:'paypal-transmission-id',
+        transmission_time:'paypal-transmission-time',
+        cert_url:'paypal-cert-url',
+        auth_algo:'paypal-auth-algo',
+        transmission_sig:'paypal-transmission-sig'
+      };
+      const verification={webhook_id:webhookId,webhook_event:await body(req)};
+      for(const [name,header] of Object.entries(names)){
+        if(typeof headers[header]!=='string' || !headers[header])return fail(res,400,'Missing webhook signature header');
+        verification[name]=headers[header];
+      }
+      // PayPal's verification endpoint is called on the server; never trust browser assertions.
+      const response=await paypal('POST','/v1/notifications/verify-webhook-signature',verification);
+      if(response.verification_status!=='SUCCESS')return fail(res,401,'Webhook signature invalid');
+      const event=verification.webhook_event;
+      if(typeof event.id!=='string' || typeof event.event_type!=='string')return fail(res,400,'Invalid webhook event');
+      // Deliberately log only non-sensitive event metadata, not buyer data.
+      console.log(JSON.stringify({eventId:event.id,eventType:event.event_type,verified:true}));
+      return json(res,200,{received:true,verified:true});
+    }
     if(req.url==='/api/paypal/orders'){
       const input=await body(req), amount=PRODUCTS[input.product];
       if(!amount || !VALID_PRICE.test(amount))return fail(res,422,'Approved offer not configured');
