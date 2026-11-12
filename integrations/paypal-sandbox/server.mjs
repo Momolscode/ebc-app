@@ -61,9 +61,16 @@ async function handler(req,res) {
   // Public deployment is a readiness check only. Never permit payment activity
   // until a separate authenticated server and durable ledger are in place.
   if(!enabled())return fail(res,503,'Sandbox payment API disabled');
-  if(req.method==='OPTIONS'){return json(res,200,{ok:true});}
-  if(req.headers.origin!==ORIGIN)return fail(res,403,'Origin not allowed');
-  if(req.method!=='POST')return fail(res,405,'Method not allowed');
+  if(req.method==='OPTIONS'){
+    if(req.headers.origin!==ORIGIN)return fail(res,403,'Origin not allowed');
+    res.setHeader('Access-Control-Allow-Origin',ORIGIN);
+    res.setHeader('Access-Control-Allow-Headers','Content-Type,Authorization,Idempotency-Key');
+    return json(res,200,{ok:true});
+  }
+  const isWebhook=req.url==='/api/paypal/webhook' && req.method==='POST';
+  if(!isWebhook && req.headers.origin!==ORIGIN)return fail(res,403,'Origin not allowed');
+  if(!isWebhook)res.setHeader('Access-Control-Allow-Origin',ORIGIN);
+  if(req.method!=='POST' && !(req.url==='/api/paypal/session'&&req.method==='GET'))return fail(res,405,'Method not allowed');
   try{
     if(req.url==='/api/paypal/session'&&req.method==='GET')return json(res,200,{token:token(),expiresIn:3600});
     if(req.url==='/api/paypal/webhook'){
