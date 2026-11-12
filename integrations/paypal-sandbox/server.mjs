@@ -3,7 +3,7 @@
 // Set PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET in a private server environment.
 // Only approved server-side products are accepted; the browser cannot set prices.
 import http from 'node:http';
-import {createHash,createHmac,randomBytes,timingSafeEqual} from 'node:crypto';
+import {createHash,createHmac,timingSafeEqual} from 'node:crypto';
 import {openLedger} from './ledger.mjs';
 import {validateOrderShape,validateCaptureShape} from './validators.mjs';
 
@@ -22,7 +22,6 @@ const MERCHANT_ID=process.env.PAYPAL_MERCHANT_ID||'';
 const enabled=()=>process.env.CELESTE_SANDBOX_API_ENABLED==='true' && !!ledger && SESSION_SECRET.length>=32 && !!MERCHANT_ID && !!process.env.PAYPAL_CLIENT_ID && !!process.env.PAYPAL_CLIENT_SECRET && VALID_PRICE.test(PRODUCTS.celeste_test) && Number(PRODUCTS.celeste_test)>0;
 function sig(x){return createHmac('sha256',SESSION_SECRET).update(x).digest('hex')}
 function session(req){const p=String(req.headers.authorization||'').replace(/^Bearer /,'').split('.');if(p.length!==3||!/^[a-f0-9]{40}$/.test(p[0])||!/^[a-f0-9]{64}$/.test(p[2]))return null;return Number(p[1])>Date.now()&&timingSafeEqual(Buffer.from(sig(p[0]+'.'+p[1])),Buffer.from(p[2]))?p[0]:null}
-function createSessionToken(){const id=randomBytes(20).toString('hex'),exp=Date.now()+3600000,p=id+'.'+exp;return p+'.'+sig(p)}
 
 function json(res, code, data) {
   res.writeHead(code, {'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store',
@@ -51,7 +50,7 @@ async function token() {
 async function paypal(method,path,payload,requestId) {
   const headers={Authorization:'Bearer '+await token(),'Content-Type':'application/json'};
   if(requestId)headers['PayPal-Request-Id']=requestId;
-  const r=await fetch(PAYPAL+path,{method,headers,body:JSON.stringify(payload)});
+  const r=await fetch(PAYPAL+path,{method,headers,...(method==='GET'?{}:{body:JSON.stringify(payload)})});
   const result=await r.json();
   if(!r.ok)throw new Error('PayPal API request failed: '+r.status);
   return result;
@@ -70,9 +69,8 @@ async function handler(req,res) {
   const isWebhook=req.url==='/api/paypal/webhook' && req.method==='POST';
   if(!isWebhook && req.headers.origin!==ORIGIN)return fail(res,403,'Origin not allowed');
   if(!isWebhook)res.setHeader('Access-Control-Allow-Origin',ORIGIN);
-  if(req.method!=='POST' && !(req.url==='/api/paypal/session'&&req.method==='GET'))return fail(res,405,'Method not allowed');
+  if(req.method!=='POST')return fail(res,405,'Method not allowed');
   try{
-    if(req.url==='/api/paypal/session'&&req.method==='GET')return json(res,200,{token:createSessionToken(),expiresIn:3600});
     if(req.url==='/api/paypal/webhook'){
       // Verify notification authenticity with PayPal. This sandbox prototype never grants access.
       const webhookId=process.env.PAYPAL_WEBHOOK_ID;
