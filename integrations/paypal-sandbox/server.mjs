@@ -47,6 +47,10 @@ async function paypal(method,path,payload,requestId) {
   return result;
 }
 async function handler(req,res) {
+  if(req.url==='/health' && req.method==='GET')return json(res,200,{status:'ok',mode:'sandbox-disabled',paymentsEnabled:false});
+  // Public deployment is a readiness check only. Never permit payment activity
+  // until a separate authenticated server and durable ledger are in place.
+  if(process.env.CELESTE_SANDBOX_API_ENABLED!=='true')return fail(res,503,'Sandbox payment API disabled');
   if(req.method==='OPTIONS'){return json(res,200,{ok:true});}
   if(req.headers.origin && req.headers.origin!==ORIGIN)return fail(res,403,'Origin not allowed');
   if(req.method!=='POST')return fail(res,405,'Method not allowed');
