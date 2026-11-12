@@ -6,20 +6,16 @@ import http from 'node:http';
 import {createHash,createHmac,timingSafeEqual} from 'node:crypto';
 import {openLedger} from './ledger.mjs';
 import {validateOrderShape,validateCaptureShape} from './validators.mjs';
+import {resolveProduct} from './catalog.mjs';
 
 const PORT = Number(process.env.PORT || 8787);
 const PAYPAL = 'https://api-m.sandbox.paypal.com';
-const PRODUCTS = Object.freeze({
-  // To enable testing, the project owner must configure this using an approved offer.
-  // Example environment: CELESTE_TEST_PRICE_EUR=1.00
-  celeste_test: process.env.CELESTE_TEST_PRICE_EUR || '',
-});
 const ORIGIN = process.env.CELESTE_ALLOWED_ORIGIN || 'http://127.0.0.1:8765';
 const VALID_PRICE = /^\d{1,5}\.\d{2}$/;
 let ledger;
 const SESSION_SECRET=process.env.CELESTE_SESSION_SECRET||'';
 const MERCHANT_ID=process.env.PAYPAL_MERCHANT_ID||'';
-const enabled=()=>process.env.CELESTE_SANDBOX_API_ENABLED==='true' && !!ledger && SESSION_SECRET.length>=32 && !!MERCHANT_ID && !!process.env.PAYPAL_CLIENT_ID && !!process.env.PAYPAL_CLIENT_SECRET && VALID_PRICE.test(PRODUCTS.celeste_test) && Number(PRODUCTS.celeste_test)>0;
+const enabled=()=>process.env.CELESTE_SANDBOX_API_ENABLED==='true' && !!ledger && SESSION_SECRET.length>=32 && !!MERCHANT_ID && !!process.env.PAYPAL_CLIENT_ID && !!process.env.PAYPAL_CLIENT_SECRET;
 function sig(x){return createHmac('sha256',SESSION_SECRET).update(x).digest('hex')}
 function session(req){const p=String(req.headers.authorization||'').replace(/^Bearer /,'').split('.');if(p.length!==3||!/^[a-f0-9]{40}$/.test(p[0])||!/^[a-f0-9]{64}$/.test(p[2]))return null;return Number(p[1])>Date.now()&&timingSafeEqual(Buffer.from(sig(p[0]+'.'+p[1])),Buffer.from(p[2]))?p[0]:null}
 
@@ -101,11 +97,17 @@ async function handler(req,res) {
     if(req.url==='/api/paypal/orders'){
       const sid=session(req);if(!sid)return fail(res,401,'Session required');
       const key=req.headers['idempotency-key'];if(typeof key!=='string'||!/^[a-zA-Z0-9_-]{8,96}$/.test(key))return fail(res,400,'Idempotency key required');
-      const input=await body(req), amount=PRODUCTS[input.product];
-      if(!amount || !VALID_PRICE.test(amount))return fail(res,422,'Approved offer not configured');
+      const input=await body(req);
+      const discoveryDay=process.env.CELESTE_DISCOVERY_DAY_ENABLED==='true';
+      const product=resolveProduct(input.product,discoveryDay);
+      if(!product)return fail(res,422,'Unknown Celeste offer');
+      if(product.kind==='free')return fail(res,409,'Free offer does not require PayPal');
+      if(product.kind==='subscription_monthly')return fail(res,409,'Monthly pass requires PayPal Subscriptions flow');
+      const amount=product.amount;
+      if(!VALID_PRICE.test(amount) || Number(amount)<=0)return fail(res,422,'Approved offer not configured');
       const existing=await ledger.byKey(sid,key);if(existing)return json(res,200,{id:existing.order_id,status:existing.state});
       const requestId=createHash('sha256').update(sid+':'+key).digest('hex').slice(0,48);
-      const order=await paypal('POST','/v2/checkout/orders',{intent:'CAPTURE',purchase_units:[{reference_id:'celeste_test',amount:{currency_code:'EUR',value:amount}}]},requestId);
+      const order=await paypal('POST','/v2/checkout/orders',{intent:'CAPTURE',purchase_units:[{reference_id:product.productId,description:product.label.slice(0,127),amount:{currency_code:'EUR',value:amount}}]},requestId);
       if(!/^[A-Z0-9]{8,32}$/.test(order.id||''))throw Error('Invalid PayPal order ID');
       const stored=await ledger.create({id:order.id,sid,product:input.product,amount,key});
       return json(res,201,{id:stored.order_id,status:stored.state});
