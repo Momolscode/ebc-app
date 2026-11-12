@@ -11,17 +11,18 @@ Il n'altère pas la version publiée de Céleste, l'archive chiffrée, la borne 
 
 ## Environnement Sandbox uniquement
 Le fichier `server.mjs` expose localement `POST /api/paypal/orders` et `POST /api/paypal/capture`.
-Il utilise exclusivement `https://api-m.sandbox.paypal.com`. Aucune clé n'est stockée dans Git.
+Il utilise exclusivement `https://api-m.sandbox.paypal.com`. Le point `POST /api/paypal/webhook` vérifie la signature via l'API PayPal et accuse réception sans débloquer de service. Aucune clé n'est stockée dans Git.
 
 Variables à configurer **côté serveur**, sans les committer :
 - `PAYPAL_CLIENT_ID` — identifiant de l'application Sandbox.
 - `PAYPAL_CLIENT_SECRET` — secret Sandbox, uniquement dans le coffre/variables privées du service.
+- `PAYPAL_WEBHOOK_ID` — identifiant du webhook Sandbox créé dans PayPal Developer.
 - `CELESTE_TEST_PRICE_EUR` — montant approuvé, au format `1.00` ; aucune valeur par défaut.
 - `CELESTE_ALLOWED_ORIGIN` — origine exacte de l'interface de test.
 - `PORT` — optionnel, 8787.
 
-Démarrer avec Node 20+ : `node server.mjs`. Ne **pas** exposer ce prototype à Internet :
-il ne possède encore ni persistance, ni authentification de session, ni contrôle d'achat, ni protection complète contre les abus.
+Démarrer avec Node 20+ : `node server.mjs`. Tests sans identifiants : `node --test server.test.mjs`. Ne **pas** exposer ce prototype à Internet :
+il ne possède encore ni persistance, ni authentification de session, ni contrôle d'achat, ni protection complète contre les abus. La vérification de signature webhook ne suffit pas à activer un droit payant.
 Ne pas utiliser de compte PayPal Live.
 
 ## Étapes nécessaires avant un vrai paiement
