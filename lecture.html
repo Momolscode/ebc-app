@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex"><meta name="theme-color" content="#160823">
+<link rel="apple-touch-icon" href="icone-180.png"><link rel="icon" href="icone-192.png">
+<title>Ma lecture · Céleste</title>
+<!-- lot 101 (Laetitia, 16/11/2026 : « le QR propose d'installer l'application et ne donne pas la lecture entière ») : la page légère des lectures.
+     Elle s'ouvre tout de suite sur le téléphone, sans rien installer : la lecture entière arrive chiffrée du coffre de Céleste, et la clé
+     n'existe que dans le code (#c=…), jamais envoyée. Les anciens codes (#lecture=…) s'ouvrent aussi ici. -->
+<style>
+:root{--fond:#0a0410;--texte:#f6eedc;--or:#f2cf7e;--doux:#cdb8e8}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:radial-gradient(ellipse 80% 45% at 50% 0%,rgba(150,62,196,.42),rgba(84,26,110,.12) 60%,rgba(0,0,0,0) 85%),linear-gradient(#1c0a28,#0a0410 55%);background-color:var(--fond);color:var(--texte);font:18px/1.65 Georgia,"Times New Roman",serif;min-height:100vh;-webkit-text-size-adjust:100%}
+main{max-width:700px;margin:0 auto;padding:22px 18px 48px}
+header{display:flex;align-items:center;gap:14px;margin:4px 0 22px}
+header img{width:58px;height:58px;border-radius:50%;box-shadow:0 0 26px #cf5cff66,0 0 0 2px #f2cf7eaa}
+.marque{font-size:26px;letter-spacing:.06em;color:var(--or);line-height:1.1}
+.marque small{display:block;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--doux)}
+h1{font-weight:400;color:var(--or);font-size:30px;line-height:1.2;margin:0 0 6px}
+#qui{margin:0 0 22px;color:var(--doux);font-size:16px}
+article h2{color:var(--or);font-weight:400;font-size:22px;line-height:1.3;margin:28px 0 8px}
+article h2.sous{font-size:19px;margin:22px 0 6px}
+article p{margin:0 0 14px}
+article ul{margin:0 0 16px;padding-left:22px}article li{margin:0 0 8px}
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin:26px 0 10px}
+button,.bouton{font:17px/1.2 system-ui,-apple-system,sans-serif;padding:13px 22px;border-radius:99px;border:0;background:var(--or);color:#2a0f38;cursor:pointer;text-decoration:none}
+button.second{background:transparent;color:var(--or);box-shadow:inset 0 0 0 1.5px var(--or)}
+.note{font:14px/1.5 system-ui,-apple-system,sans-serif;color:var(--doux);margin:6px 0 0}
+#etat{font:17px/1.5 system-ui,-apple-system,sans-serif;text-align:center;margin:60px 0 16px;color:var(--doux)}
+#centre{text-align:center}
+#carnet{margin-top:40px;border-top:1px solid #f2cf7e44;padding-top:18px}
+#carnet h2{font-weight:400;color:var(--or);font-size:20px;margin:0 0 10px}
+#carnet ul{list-style:none;margin:0;padding:0}#carnet li{margin:0 0 10px}
+#carnet a{color:var(--texte);text-decoration:none;border-bottom:1px solid #f2cf7e66}#carnet .ici{color:var(--or)}
+footer{margin-top:34px;text-align:center;font-size:14px;color:var(--doux)}
+[hidden]{display:none!important}
+@media print{
+  @page{margin:15mm 14mm 16mm}
+  html,body{background:#fff!important;color:#151015!important;font-size:12pt;min-height:0}
+  main{max-width:none;padding:0}
+  header{margin:0 0 10mm}header img{width:16mm;height:16mm;box-shadow:none}
+  .marque{color:#7a5a14}.marque small{color:#6b5a7a}
+  h1{color:#7a5a14;font-size:20pt}#qui{color:#555}
+  article h2{color:#7a5a14;font-size:14pt;break-after:avoid;page-break-after:avoid}
+  article p,article li{orphans:3;widows:3}
+  .actions,.note,#carnet,#etat,#centre{display:none!important}
+  footer{color:#777}
+}
+</style></head><body><main>
+<header><img src="icone-180.png" alt=""><div class="marque">Céleste<small>L’Étoile du Berger</small></div></header>
+<p id="etat" role="status" aria-live="polite">Ouverture de ta lecture…</p>
+<div id="centre"><button id="reessayer" type="button" hidden>Réessayer</button></div>
+<section id="page" hidden>
+  <h1 id="titre"></h1><p id="qui"></p>
+  <article id="lecture"></article>
+  <div class="actions"><button id="pdf" type="button">Enregistrer en PDF</button><button id="partager" type="button" class="second">Partager</button></div>
+  <p class="note">Ta lecture reste aussi sur ce téléphone : tu la retrouveras en bas de cette page, dans « Tes lectures ».</p>
+</section>
+<section id="carnet" hidden><h2>Tes lectures sur ce téléphone</h2><ul></ul></section>
+<footer>Céleste · L’Étoile du Berger</footer>
+</main><script>
+'use strict';
+(function () {
+  /* lot 107 (migration vers Cloudflare, 17/11) : sur GitHub Pages (et le banc local http://127.0.0.1:8784), l'ancien coffre, comme avant ;
+     sur une autre origine https (Cloudflare) ou en essai local (http://localhost, http://127.0.0.1), le coffre du même site (/v1/coffres/…) ;
+     toute autre page garde l'ancien coffre. */
+  const COFFRE = (o => o === 'https://momolscode.github.io' || o === 'http://127.0.0.1:8784' ? 'https://celeste-coffre-securise.yellowghost64.chatgpt.site'
+    : /^https:\/\/[a-z0-9.-]+(?::\d{1,5})?$/i.test(o) || /^http:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?$/.test(o) ? o
+    : 'https://celeste-coffre-securise.yellowghost64.chatgpt.site')(String(location.origin || '')), CLE = 'celeste-lectures-v1';
+  const $ = id => document.getElementById(id), enc = t => new TextEncoder().encode(t);
+  const b64d = t => Uint8Array.from(atob(String(t).replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+  const b64e = b => { let x = ''; for (const c of new Uint8Array(b)) x += String.fromCharCode(c); return btoa(x).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+  const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  const jourFr = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '')); return m ? (+m[3] === 1 ? '1er' : String(+m[3])) + ' ' + MOIS[+m[2] - 1] + ' ' + m[1] : ''; };
+  let graine = '', revision = 0, recente = false, depuis = Date.now(), courant = null;
+  function etat(t, erreur) { $('etat').textContent = t || ''; $('etat').hidden = !t; $('reessayer').hidden = !erreur; }
+  /* la page : le titre, le prénom et la date, puis la lecture entière, bloc par bloc (titres, paragraphes, listes) */
+  function afficher(l) {
+    courant = l; document.title = (l.t || 'Ma lecture') + (l.p ? ' · ' + l.p : '');
+    $('titre').textContent = l.t || 'Ma lecture'; $('qui').textContent = [l.p, jourFr(l.j)].filter(Boolean).join(' · ');
+    const a = $('lecture'); a.replaceChildren(); let ul = null;
+    for (const b of Array.isArray(l.b) ? l.b : []) {
+      if (!b || typeof b.x !== 'string' || !b.x.trim()) continue;
+      if (b.k === 'l') { if (!ul) { ul = document.createElement('ul'); a.append(ul); } const li = document.createElement('li'); li.textContent = b.x; ul.append(li); continue; }
+      ul = null; const sous = b.k === 'p' && b.x.length < 70 && !/[.!?:;,…»)]$/.test(b.x);   /* un intertitre court (« Ce que la Lune débloque », le nom d'une carte) */
+      const e = document.createElement(b.k === 'h' || sous ? 'h2' : 'p'); if (sous) e.className = 'sous'; e.textContent = b.x; a.append(e);
+    }
+    $('page').hidden = false; etat(''); carnet();
+  }
+  /* le carnet : chaque lecture ouverte ici reste sur ce téléphone (et seulement ici) */
+  const lireTout = () => { try { const o = JSON.parse(localStorage.getItem(CLE)); return o && typeof o === 'object' ? o : {}; } catch (_) { return {}; } };
+  function garder(cle, l) {
+    try { const o = lireTout(); o[cle] = { t: l.t, p: l.p, j: l.j, b: l.b, r: l.r || 0, vu: Date.now() };
+      const k = Object.keys(o).sort((x, y) => (o[y].vu || 0) - (o[x].vu || 0)); k.slice(25).forEach(x => { delete o[x]; });
+      localStorage.setItem(CLE, JSON.stringify(o)); } catch (_) { /* téléphone sans mémoire : la lecture reste à l'écran */ }
+  }
+  function carnet() {
+    const o = lireTout(), k = Object.keys(o).sort((x, y) => String(o[y].j || '').localeCompare(String(o[x].j || ''))), ul = $('carnet').querySelector('ul');
+    ul.replaceChildren(); $('carnet').hidden = k.length < 2 && !!courant;
+    for (const c of k) { const li = document.createElement('li'), a = document.createElement('a'); a.href = c.startsWith('c=') ? '#' + c : '#'; a.textContent = (o[c].t || 'Ma lecture') + (o[c].j ? ' · ' + jourFr(o[c].j) : '');
+      if (!c.startsWith('c=')) a.addEventListener('click', e => { e.preventDefault(); graine = ''; afficher(o[c]); window.scrollTo(0, 0); });
+      if ('#' + c === location.hash) a.className = 'ici'; li.append(a); ul.append(li); }
+  }
+  /* le coffre : la clé vient du code (jamais envoyée) ; le coffre ne rend qu'un texte chiffré */
+  async function materiel(seed) {
+    const brut = b64d(seed); if (brut.length !== 32) throw new Error('code');
+    const racine = await crypto.subtle.importKey('raw', brut, 'HKDF', false, ['deriveBits', 'deriveKey']);
+    const p = info => ({ name: 'HKDF', hash: 'SHA-256', salt: enc('Celeste-coffre-cloud/HKDF-SHA256/v1'), info: enc(info) });
+    const acces = await crypto.subtle.deriveBits(p('access/v1'), racine, 256), cle = await crypto.subtle.deriveKey(p('encryption/v1'), racine, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    const jeton = b64e(acces), id = b64e(await crypto.subtle.digest('SHA-256', enc('Celeste-coffre-id/v1:' + jeton)));
+    return { id, jeton, cle };
+  }
+  async function depuisCoffre(seed, silencieux) {
+    const local = lireTout()['c=' + seed];
+    if (!silencieux) { if (local) { afficher(local); revision = local.r || 0; } else etat('Ouverture de ta lecture…'); }
+    try {
+      const m = await materiel(seed), ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 15000);
+      let r; try { r = await fetch(COFFRE + '/v1/coffres/' + m.id, { headers: { Authorization: 'Bearer ' + m.jeton }, mode: 'cors', credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer', redirect: 'error', signal: ctrl.signal }); } finally { clearTimeout(t); }
+      if (r.status === 404) { if (!courant) etat('Ta lecture se prépare encore sur la borne : patiente quelques secondes, puis touche « Réessayer ».', true); return; }
+      if (!r.ok) throw new Error('http');
+      const env = await r.json();
+      if (!env || env.format !== 'celeste-coffre/1' || env.id !== m.id || !Number.isSafeInteger(env.revision) || env.revision < 1) throw new Error('enveloppe');
+      if (env.revision <= revision && courant) return;
+      const aad = enc(JSON.stringify({ format: 'celeste-coffre/1', id: env.id, revision: env.revision }));
+      const clair = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64d(env.iv), additionalData: aad, tagLength: 128 }, m.cle, b64d(env.ciphertext));
+      const fiche = JSON.parse(new TextDecoder().decode(clair)), l = fiche && Array.isArray(fiche.visites) && fiche.visites[0] && fiche.visites[0].lecture;
+      if (!l || !Array.isArray(l.b)) throw new Error('format');
+      const lec = { t: String(l.t || 'Ma lecture'), p: String(l.p || ''), j: String(l.j || ''), b: l.b, r: env.revision };
+      afficher(lec); revision = env.revision; garder('c=' + seed, lec);
+      recente = Date.now() - Date.parse(lec.j) < 30 * 60000;
+    } catch (_) { if (!courant) etat('Ta lecture n’a pas pu s’ouvrir. Vérifie ta connexion, puis touche « Réessayer ».', true); }
+  }
+  /* les anciens codes : le texte était dans le code lui-même */
+  async function depuisCode(code) {
+    try {
+      const f = new Blob([b64d(code)]).stream().pipeThrough(new DecompressionStream('deflate-raw')), d = JSON.parse(await new Response(f).text());
+      const b = String(d.x || '').split(/\n+/).map(x => x.trim()).filter(Boolean).map(x => ({ k: x.length < 80 && !/[.!?:;,…»)]$/.test(x) ? 'h' : 'p', x }));
+      const lec = { t: String(d.t || 'Ma lecture'), p: String(d.p || ''), j: String(d.j || ''), b }; afficher(lec); let h = 2166136261; for (const ch of code) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } garder('l=' + (h >>> 0).toString(36), lec);
+    } catch (_) { etat('Ce code n’a pas pu être lu sur ce téléphone.', false); }
+  }
+  async function demarrer() {
+    const h = location.hash; revision = 0; courant = null; $('page').hidden = true;
+    let m = /^#c=([A-Za-z0-9_-]{43})$/.exec(h);
+    if (m) { graine = m[1]; depuis = Date.now(); return depuisCoffre(graine); }
+    graine = '';
+    m = /^#lecture=([A-Za-z0-9_-]{1,6000})$/.exec(h);
+    if (m) return depuisCode(m[1]);
+    if (/^#[a-z]+=[A-Za-z0-9_-]+$/.test(h)) { location.replace('./' + h); return; }   /* les autres pages de Céleste (étoile, glyphe…) */
+    etat(Object.keys(lireTout()).length ? '' : 'Aucune lecture sur ce téléphone pour l’instant.'); carnet(); $('carnet').hidden = !Object.keys(lireTout()).length;
+  }
+  $('reessayer').addEventListener('click', () => { if (graine) depuisCoffre(graine); else demarrer(); });
+  $('pdf').addEventListener('click', () => { try { window.print(); } catch (_) { /* impression indisponible */ } });
+  $('partager').addEventListener('click', async () => {
+    const t = (courant && courant.t) || 'Ma lecture Céleste';
+    try { if (navigator.share) { await navigator.share({ title: t, url: location.href }); return; } } catch (_) { return; }
+    try { await navigator.clipboard.writeText(location.href); $('partager').textContent = 'Lien copié ✓'; } catch (_) { /* copie refusée */ }
+  });
+  window.addEventListener('hashchange', demarrer);
+  /* la lecture suit la borne : si Céleste parlait encore quand le code a été lu, la page se complète toute seule */
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && graine) depuisCoffre(graine, true); });
+  setInterval(() => { if (graine && document.visibilityState === 'visible' && (recente || !courant) && Date.now() - depuis < 30 * 60000) depuisCoffre(graine, true); }, 12000);
+  if (!window.crypto || !crypto.subtle) { etat('Ouvre ce code avec un navigateur récent (Safari, Chrome).', false); return; }
+  demarrer();
+})();
+</script></body></html>

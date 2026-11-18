@@ -1,0 +1,296 @@
+{
+  "sha": "cfff8e52ebaea37c7e953ae2d06b174acb827ac4",
+  "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/trees/cfff8e52ebaea37c7e953ae2d06b174acb827ac4",
+  "tree": [
+    {
+      "path": ".github",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "37e42ab7e1321e9dc0dccbbb2a3b86baa8e9bf52",
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/trees/37e42ab7e1321e9dc0dccbbb2a3b86baa8e9bf52"
+    },
+    {
+      "path": ".github/workflows",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "2d1acfc7cd6f56b7415c6134e78df3f81543c10d",
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/trees/2d1acfc7cd6f56b7415c6134e78df3f81543c10d"
+    },
+    {
+      "path": ".github/workflows/main.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "43947abfb0049176337b949bdebe6552ff432451",
+      "size": 4272,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/43947abfb0049176337b949bdebe6552ff432451"
+    },
+    {
+      "path": ".github/workflows/test.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "54ecd3036e3f83c644111cb8702577b419897676",
+      "size": 1551,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/54ecd3036e3f83c644111cb8702577b419897676"
+    },
+    {
+      "path": ".gitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b1ec3fc72a2f22e6e548abcf8ac5891e379db292",
+      "size": 143,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/b1ec3fc72a2f22e6e548abcf8ac5891e379db292"
+    },
+    {
+      "path": ".projectile",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "616f66cde02a8624c4e21a6356066d386da01a02",
+      "size": 14,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/616f66cde02a8624c4e21a6356066d386da01a02"
+    },
+    {
+      "path": "CMakeLists.txt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "fff33a16d001a4d72e52bb281ecc36ddb7fcac38",
+      "size": 3959,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/fff33a16d001a4d72e52bb281ecc36ddb7fcac38"
+    },
+    {
+      "path": "Dockerfile",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "87acaf9645377d1388887ad32c8e34939c7bef17",
+      "size": 822,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/87acaf9645377d1388887ad32c8e34939c7bef17"
+    },
+    {
+      "path": "LICENSE.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0875822b3559d402b36f100d0e3068f0deaa925a",
+      "size": 1071,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/0875822b3559d402b36f100d0e3068f0deaa925a"
+    },
+    {
+      "path": "MANIFEST.in",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f1e90a42f5b9f4afaac8fad599fc6ade1d92a9d3",
+      "size": 134,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/f1e90a42f5b9f4afaac8fad599fc6ade1d92a9d3"
+    },
+    {
+      "path": "Makefile",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2ee7ced2b15bdd1561adf65be0aa56fef9b8ae18",
+      "size": 193,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/2ee7ced2b15bdd1561adf65be0aa56fef9b8ae18"
+    },
+    {
+      "path": "README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b8fad084a453f3772ee5f75cde511d116b307944",
+      "size": 2013,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/b8fad084a453f3772ee5f75cde511d116b307944"
+    },
+    {
+      "path": "etc",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "f3b8b2f0ded2a9a32d94441436ae06c94f0c65fe",
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/trees/f3b8b2f0ded2a9a32d94441436ae06c94f0c65fe"
+    },
+    {
+      "path": "etc/libtashkeel_model.ort",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7bd74ebd8d9408d85884b6cb68cb89edb218629b",
+      "size": 10261536,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/7bd74ebd8d9408d85884b6cb68cb89edb218629b"
+    },
+    {
+      "path": "licenses",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "607d6af9a6a0aedbc61ca607eee7eca04d39cd78",
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/trees/607d6af9a6a0aedbc61ca607eee7eca04d39cd78"
+    },
+    {
+      "path": "licenses/uni-algo",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "960855a20830e6b1340ba56d1526059bf1204f4f",
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/trees/960855a20830e6b1340ba56d1526059bf1204f4f"
+    },
+    {
+      "path": "licenses/uni-algo/LICENSE.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "02cf5f254486e50695a5922ac4bee3530719fe4c",
+      "size": 2208,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/02cf5f254486e50695a5922ac4bee3530719fe4c"
+    },
+    {
+      "path": "piper_phonemize",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "922c7f6ec1f67ea894e23a3900babdb48fe39e08",
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/trees/922c7f6ec1f67ea894e23a3900babdb48fe39e08"
+    },
+    {
+      "path": "piper_phonemize/.gitignore",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f42b05a1f6f57807688b7d3819815aa9e407b1a8",
+      "size": 38,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/f42b05a1f6f57807688b7d3819815aa9e407b1a8"
+    },
+    {
+      "path": "piper_phonemize/__init__.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c6072aeec49bf202512d1b45842773c04e22b1cd",
+      "size": 1982,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/c6072aeec49bf202512d1b45842773c04e22b1cd"
+    },
+    {
+      "path": "pyproject.toml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "233c8fb59fc1da4e64ee6ed066f402c3f08261d2",
+      "size": 116,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/233c8fb59fc1da4e64ee6ed066f402c3f08261d2"
+    },
+    {
+      "path": "setup.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "89ba52e671811b7cde25738b38b724d4cba80d92",
+      "size": 1545,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/89ba52e671811b7cde25738b38b724d4cba80d92"
+    },
+    {
+      "path": "src",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "9d69ccb17ae5beb3e788cf883f7d671af7969052",
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/trees/9d69ccb17ae5beb3e788cf883f7d671af7969052"
+    },
+    {
+      "path": "src/json.hpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4d1a37ad7cb874769d911fc3362d567da3aca291",
+      "size": 907858,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/4d1a37ad7cb874769d911fc3362d567da3aca291"
+    },
+    {
+      "path": "src/main.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "31a23549ab0f55c9e65bc552461f999c6b5c8e70",
+      "size": 8199,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/31a23549ab0f55c9e65bc552461f999c6b5c8e70"
+    },
+    {
+      "path": "src/phoneme_ids.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b6a0d40571edba0d966debcb5bd047cf6a8d80d7",
+      "size": 2032,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/b6a0d40571edba0d966debcb5bd047cf6a8d80d7"
+    },
+    {
+      "path": "src/phoneme_ids.hpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8978df0a56c1df620f70c5ab6661920386f3e778",
+      "size": 5454,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/8978df0a56c1df620f70c5ab6661920386f3e778"
+    },
+    {
+      "path": "src/phonemize.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "76b8bce93de8f1d5fd5fb26dfb6a56c49395c611",
+      "size": 5786,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/76b8bce93de8f1d5fd5fb26dfb6a56c49395c611"
+    },
+    {
+      "path": "src/phonemize.hpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5e4238e3e6c1e178f62c541522f60ef181da076c",
+      "size": 2477,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/5e4238e3e6c1e178f62c541522f60ef181da076c"
+    },
+    {
+      "path": "src/python.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "797fd75c508fc3ad7d84841940dd0eb2493727be",
+      "size": 5091,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/797fd75c508fc3ad7d84841940dd0eb2493727be"
+    },
+    {
+      "path": "src/python_test.py",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "25f00388eaef45f71c61e99e336c5bb4aed43554",
+      "size": 3091,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/25f00388eaef45f71c61e99e336c5bb4aed43554"
+    },
+    {
+      "path": "src/shared.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "41d7c6cc770a6e16b0f6d498072315c7ae8dc9c6",
+      "size": 22,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/41d7c6cc770a6e16b0f6d498072315c7ae8dc9c6"
+    },
+    {
+      "path": "src/shared.hpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c7264f0d43630e78b5b5f06e18a64c73182aa176",
+      "size": 168,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/c7264f0d43630e78b5b5f06e18a64c73182aa176"
+    },
+    {
+      "path": "src/tashkeel.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "23683b7395d2c479da1d0ad167b7a6172f3eed4a",
+      "size": 7212,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/23683b7395d2c479da1d0ad167b7a6172f3eed4a"
+    },
+    {
+      "path": "src/tashkeel.hpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1611779f90295ed918e54ebe9ae2fb955898d35e",
+      "size": 900,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/1611779f90295ed918e54ebe9ae2fb955898d35e"
+    },
+    {
+      "path": "src/test.cpp",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4e433f65c9657c165c2448c71e2702f5599abd23",
+      "size": 4782,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/4e433f65c9657c165c2448c71e2702f5599abd23"
+    },
+    {
+      "path": "src/uni_algo.h",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3f35a3dd8bda06ef1cae875eb4f31d801a14a7f4",
+      "size": 1947006,
+      "url": "https://api.github.com/repos/wide-video/piper-phonemize/git/blobs/3f35a3dd8bda06ef1cae875eb4f31d801a14a7f4"
+    }
+  ],
+  "truncated": false
+}

@@ -1,0 +1,20 @@
+Céleste — prototype de voix locale française SIWIS
+
+Les licences de ces composants sont distinctes. Cette notice ne change pas la licence des sources historiques de Céleste et ne déclare pas le moteur entier sous MIT.
+
+1. Phonémisation : les fichiers piper_phonemize.js/.wasm/.data proviennent de @diffusionstudio/piper-wasm 1.0.0, dont le wrapper npm déclare MIT. Ils incorporent eSpeak-NG, sous GNU GPL version 3 ou ultérieure. Le texte GPL intégral, les archives sources de eSpeak-NG et du phonémiseur, leurs copyrights et la recette de construction sont conservés à côté de cette notice. Les sources du phonémiseur Piper ont une licence MIT distincte, également jointe. Les avis d'origine ne doivent pas être supprimés lors de l'exposition de ces ressources.
+
+Provenance vérifiée : https://github.com/diffusionstudio/piper-wasm/tree/69522c832bd52d7c16389e9a8aee568065027689
+Les trois binaires de cette archive sont identiques au candidat. La recette publiée emploie Emscripten 3.1.47 et renvoie vers wide-video/piper-phonemize. Le commit stable cfff8e52ebaea37c7e953ae2d06b174acb827ac4 de ce dernier épingle le code eSpeak-NG 0f65aa301e0d6bae5e172cc74197d32a6182200f dans CMake.
+Limite conservée : la recette upstream prépare espeak-ng-data via un clone sans commit explicite. Le paquet ne permet pas d'identifier ce commit exact. Les sources et instructions sont jointes, mais aucune recompilation complète ni reproductibilité bit à bit n'est revendiquée. Voir SOURCES-PHONEMISEUR.json et sources-correspondantes/.
+
+2. Inférence : ONNX Runtime Web 1.18.0, Microsoft et contributeurs, MIT. Texte complet : onnxruntime-v1.18.0-MIT.txt. Source officielle versionnée : https://github.com/microsoft/onnxruntime/tree/v1.18.0
+
+3. Voix : fr_FR-siwis-medium, un locuteur français, modèle Piper déjà présent dans Céleste. Sa carte de modèle indique le corpus SIWIS sous CC-BY 4.0. Carte complète conservée : siwis-MODEL_CARD.txt. Les métadonnées du dépôt global Piper voices annoncent MIT ; cela ne remplace pas les conditions du corpus propres à cette voix.
+Source : https://huggingface.co/rhasspy/piper-voices/tree/main/fr/fr_FR/siwis/medium
+Attribution du corpus : Junichi Yamagishi, Pierre-Edouard Honnet, Philip Garner et Alexandros Lazaridis, The SIWIS French Speech Synthesis Database, 2016, publié en 2017 par l'Université d'Édimbourg, Centre for Speech Technology Research. DOI : https://doi.org/10.7488/ds/1705
+Fiche officielle : https://datashare.ed.ac.uk/handle/10283/2353
+Licence citée par la carte : https://creativecommons.org/licenses/by/4.0/
+Le modèle et sa configuration ne sont pas modifiés. Le pipeline produit seulement des WAV temporaires depuis un texte ; aucun enregistrement ni nouvelle voix entraînée n'est diffusé ici.
+
+Les notices, sources archivées et leurs empreintes sont des pièces de provenance. Elles ne constituent pas une promesse de conformité juridique globale ni la preuve d'une publication déjà effectuée. Aucune voix système, Chatterbox ou API distante n'est utilisée en remplacement.

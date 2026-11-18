@@ -1,0 +1,23 @@
+{
+  "name": "@diffusionstudio/piper-wasm",
+  "version": "1.0.0",
+  "license": "MIT",
+  "gitHead": "69522c832bd52d7c16389e9a8aee568065027689",
+  "repository": {
+    "url": "git+https://github.com/diffusion-studio/piper-wasm.git",
+    "type": "git"
+  },
+  "dist": {
+    "shasum": "42c15fec08bf8af3f167d5c5285a61cd0f789120",
+    "tarball": "https://registry.npmjs.org/@diffusionstudio/piper-wasm/-/piper-wasm-1.0.0.tgz",
+    "fileCount": 5,
+    "integrity": "sha512-4Hgh7wJ1PuGEVgVi1CpducESnyXwjFRJN4zXjYRpxgquM+Zh6Eqq8ZaiGpCKm4yXvT1Y2SPQXbv0dEckFD9NaQ==",
+    "signatures": [
+      {
+        "sig": "MEQCIEyadsb86yBp2GIwYZNNqifd2XPMFcJzAeyzL5eGv53nAiBEdpJC2x5lCU7LKm0hDTVpfGzw3RmsMqnVCbf/+xFt/w==",
+        "keyid": "SHA256:jl3bwswu80PjjokCgh0o2w5c2U4LhQAE57gj9cz1kzA"
+      }
+    ],
+    "unpackedSize": 18835839
+  }
+}
